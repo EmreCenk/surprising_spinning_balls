@@ -1,10 +1,10 @@
 
 // feel free to play around with these values
-int number_of_balls = 1000;
-int spacing_between_balls = 1;
-int ball_radius = 5;
-float spinning_speed_difference = 0.0003;
-color[] colors = { color(57, 255, 20), color(255, 87, 51)};
+int number_of_balls = 100;
+int spacing_between_balls = 3;
+int ball_radius = 10;
+float spinning_speed_difference = 0.0005;
+color[] colors = { color(255, 0, 0), color(0, 255, 0), color(0, 0, 255), color(255, 255, 255) };
 
 //don't play with anything from this line onward
 
@@ -21,7 +21,7 @@ void generate_balls(){
     balls[i] = new SpinningCircle(starting_point_x + spacing_between_balls * i,
                                   starting_point_y,
                                   ball_radius,
-                                  (i + 1)*spinning_speed_difference,
+                                  (i + 1)*spinning_speed_difference * pow(-1, i),
                                   colors[i%colors.length]);
   }
   //println(starting_point_x);
@@ -60,8 +60,10 @@ void keyPressed(){
   if (key == 's'){
     //slow motion
     float coefficient;
-    if (in_slow_motion) coefficient = 10;
-    else coefficient = 0.1;
+    float slow_motion_coef = spinning_speed_difference * number_of_balls * 100;
+    println(slow_motion_coef);
+    if (in_slow_motion) coefficient = slow_motion_coef;
+    else coefficient = 1/slow_motion_coef;
     for (int i = 0; i<number_of_balls; i++){
       balls[i].spin_speed *= coefficient;
     }
