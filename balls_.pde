@@ -1,10 +1,18 @@
 
 // feel free to play around with these values
-int number_of_balls = 100;
-int spacing_between_balls = 3;
+int number_of_balls = 1000;
+int spacing_between_balls = 1;
 int ball_radius = 10;
-float spinning_speed_difference = 0.0005;
-color[] colors = { color(255, 0, 0), color(0, 255, 0), color(0, 0, 255), color(255, 255, 255) };
+float spinning_speed_difference = 0.001;
+color[] colors = { color(255, 0, 0),
+                   color(0, 255, 0),
+                   color(0, 0, 255),
+                   color(255, 255, 255)
+                 };
+float[] random_coefficients = {0.1,
+                               0.1,
+                               0.1,
+                               0.1};
 
 //don't play with anything from this line onward
 
@@ -21,7 +29,7 @@ void generate_balls(){
     balls[i] = new SpinningCircle(starting_point_x + spacing_between_balls * i,
                                   starting_point_y,
                                   ball_radius,
-                                  (i + 1)*spinning_speed_difference * pow(-1, i),
+                                  (i + 1)*spinning_speed_difference * random_coefficients[i%random_coefficients.length],
                                   colors[i%colors.length]);
   }
   //println(starting_point_x);
