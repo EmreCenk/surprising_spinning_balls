@@ -4,11 +4,12 @@ int number_of_balls = 1000;
 int spacing_between_balls = 1;
 int ball_radius = 10;
 float spinning_speed_difference = 0.001;
-color[] colors = { color(255, 0, 0),
-                   color(0, 255, 0),
-                   color(0, 0, 255),
-                   color(255, 255, 255)
-                 };
+color[] colors;
+ //= { color(255, 0, 0),
+                   //color(0, 255, 0),
+                   //color(0, 0, 255),
+                   //color(255, 255, 255)
+                 //}
 float[] random_coefficients = {0.1,
                                0.1,
                                0.1,
@@ -21,7 +22,30 @@ boolean screen_is_paused = false; //stores whether the screen is paused;
 boolean in_slow_motion = false; // stores whether the animation is in "slow motion" mode
 SpinningCircle[] balls;
 
+void generate_colors(){
+  colors = new color[number_of_balls];
+  int r = 0;
+  int g = 0;
+  int b = 0;
+  int plus = 1;
+  for (int i = 0; i<number_of_balls; i++){
+    if (0 <= r && r < 255) {
+      r+=plus;
+    } else if (0 <= g && g < 255) {
+      g+=plus;
+    } else if (0 <= b && b < 255) {
+      b+=plus;
+    } else {
+      plus *= -1;
+      r+=plus;
+      g+=plus;
+      b+=plus;
+    };
+    colors[i] = color(r, g, b);
+  }
+}
 void generate_balls(){
+  generate_colors();
   balls = new SpinningCircle[number_of_balls];
   float starting_point_x = (width/2) - (number_of_balls*spacing_between_balls/2);
   float starting_point_y = height/2;
@@ -45,6 +69,7 @@ void setup(){
   //println("started progam");
   size(1000, 1000);
   generate_balls();
+
 }
 
 void draw(){
