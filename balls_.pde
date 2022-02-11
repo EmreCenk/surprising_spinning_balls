@@ -1,5 +1,5 @@
 
-
+// feel free to play around with these values
 int number_of_balls = 1000;
 int spacing_between_balls = 1;
 int ball_radius = 5;
@@ -24,17 +24,17 @@ void generate_balls(){
                                   (i + 1)*spinning_speed_difference,
                                   colors[i%colors.length]);
   }
-  println(starting_point_x);
-  println(starting_point_y);
+  //println(starting_point_x);
+  //println(starting_point_y);
 
-  for (int i = 0; i<number_of_balls; i++)
-    println(balls[i].x, balls[i].y);
+  //for (int i = 0; i<number_of_balls; i++)
+  //  println(balls[i].x, balls[i].y);
 
 }
 void setup(){
   fill(0);
   stroke(255);
-  println("started progam");
+  //println("started progam");
   size(1000, 1000);
   generate_balls();
 }
