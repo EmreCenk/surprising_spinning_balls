@@ -14,10 +14,10 @@ boolean draw_circle_outline = false; // do you want processing to draw outlines 
 // random coefficients to multiply the balls' spin speeds by certain coefficients:
 // The i'th coefficient is applied to every ball with index i, i+len(random_coefficients), i+2*len(random_coefficients), i+3*len(random_coefficients)...
 // in other words, the i'th coefficient is applied to every ball with index k, where i%random_coefficients.length == k
-float[] random_coefficients = {0.5}; // right now it's multiplying all spin speeds by 0.5, so it's not doing anything. Check out the examples below if you want to see some cooler values
+//float[] random_coefficients = {0.5}; // right now it's multiplying all spin speeds by 0.5, so it's not doing anything. Check out the examples below if you want to see some cooler values
 
 // here are some more interesting random_coefficients values you could try (they get cooler the more you go down):
-//float[] random_coefficients = {0.18, 0.19, 0.20, 0.21};
+float[] random_coefficients = {0.18, 0.19, 0.20, 0.21};
 //float[] random_coefficients = {0.0, -0.002, 0.004, -0.006, 0.008, -0.01, 0.012, -0.014, 0.016, -0.018, 0.02, -0.022, 0.024, -0.026, 0.028, -0.03, 0.032, -0.034, 0.036, -0.038, }; 
 //float[] random_coefficients = {0.4, -0.4};
 //float[] random_coefficients = {0.4, -0.8};
@@ -25,7 +25,7 @@ float[] random_coefficients = {0.5}; // right now it's multiplying all spin spee
 
 // draws a bunch of lines that connect certain balls.
 // WARNING: draw_weird_lines LOOKS VERY BAD FOR ANY random_coefficient CONFIGURATION EXCEPT random_coefficients = {K} WHERE K IS SOME CONSTANT
-boolean draw_weird_lines = false; // I repeat: only turn on if random_coefficients = {0.5} or some other constant (I mean... you COULD turn it on whenever you like ... if you want your eyes to bleed)
+boolean draw_weird_lines = true; // I repeat: only turn on if random_coefficients = {0.5} or some other constant (I mean... you COULD turn it on whenever you like ... if you want your eyes to bleed)
 
 //don't play with anything from this line onward
 color[] colors; //stores the colors of the balls (we don't actually have to store it because every instance of SpinningCircle keeps track of it's own color, but it's easier to have an array when generating the gradient)
