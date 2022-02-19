@@ -46,10 +46,12 @@ void generate_colors(){
   
   // generates the gradient of colors
   colors = new color[number_of_balls];
-  int r = 0;
-  int g = 0;
-  int b = 0;
-  int plus = 1; // what we will increment by
+  
+  //r,g,b is what color the gradient will start at (0,0,0) is perfect because the outermost balls barely move anyways, so it's better for them to be less visible
+  float r = 0;
+  float g = 0;
+  float b = 0;
+  float plus = 1.25; // what we will increment the gradient by (increase this for a sharper change in the gradient)
   for (int i = 0; i<number_of_balls; i++){
     if (0 <= r && r < 255) { 
       r+=plus;
