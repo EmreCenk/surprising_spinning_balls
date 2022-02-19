@@ -160,7 +160,7 @@ void keyPressed(){
   
   if (key == 'p' || key == 'P'){
     // press the p key to take a picture
-    saveFrame("output/cool_picture####");
+    saveFrame("output/cool_picture####.png");
     println("Took picture!");
   }
   
