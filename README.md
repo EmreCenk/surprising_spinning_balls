@@ -1,4 +1,14 @@
 # surprising_spinning_balls
-An animation where balls on a 2d surface spin at alternating speeds. As a result, a cool wave/heart pattern emerges.
+Who knew spinning balls at different speeds could produce such interesting results?
 
-![](output/cool_picture0440.tif)
+[comment]: <> (![]&#40;output/cool_picture0440.png&#41;)
+![](output/cool_picture0475.png)
+![](output/cool_picture0798.png)
+
+[comment]: <> (![]&#40;output/cool_picture0862.png&#41;)
+![](output/cool_picture0869.png)
+![](output/cool_picture0932.png)
+![](output/cool_picture1137.png)
+![](output/cool_picture2155.png)
+![](output/cool_picture1608.png)
+
