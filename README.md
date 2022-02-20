@@ -7,6 +7,8 @@ Who knew spinning balls at different speeds could produce such interesting resul
 | ![](output/cool_picture1137.png)  | ![](output/cool_picture2155.png)  |
 | ![](output/cool_picture0475.png)  | ![](output/cool_picture0326.png) |
 | ![](output/cool_picture0221.png)  | ![](output/cool_picture0223.png)  |
+
+Magnified:
 ![](output/cool_picture0475.png)
 
 
