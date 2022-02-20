@@ -1,6 +1,9 @@
 
 /*
 An animation that spins a bunch of balls at different speeds
+press p to take a pictures
+press s to toggle slow motion
+click the screen to pause animation
 */ 
 
 
@@ -10,8 +13,10 @@ float spacing_between_balls = 1;
 int ball_radius = 12;
 float spinning_speed_difference = 0.0001; // how much the spin speed should increase between each ball
 String color_mode = "gradient"; // "gradient" or "alternating". if "gradient": colors of balls will be in a gradient. if "alternating": the colors will be alternating
+float gradient_increment = 1.25*1000/float(number_of_balls); //gradient rate of change between balls (increase this for a sharper change in the gradient, decrease for smoother transition) 
+// [right now I have a formula to find the optimal rate of change to include all colors, so I wouldn't change it if I were you. but if you were to change, the value should be 0< X < 255]
 String direction = "counterclockwise"; // "clockwise" or "counterclockwise"
-color[] default_colors = {color(255, 0, 0), color(0, 255, 0), // the default color scheme if there is no gradient
+color[] default_colors = {color(255, 0, 0), color(255, 255, 255), // the default color scheme if there is no gradient
                           //color(0, 0, 255), color(255, 255, 255)
                          }; 
 boolean draw_circle_outline = false; // do you want processing to draw outlines on the circles? Spoiler: it looks way better without outlines
@@ -24,16 +29,20 @@ float[] random_coefficients = {0.5}; // right now it's multiplying all spin spee
 
 // here are some more interesting random_coefficients values you could try (they get cooler the more you go down):
 //float[] random_coefficients = {0.18, 0.19, 0.20, 0.21};
-//float[] random_coefficients = {0.0, -0.002, 0.004, -0.006, 0.008, -0.01, 0.012, -0.014, 0.016, -0.018, 0.02, -0.022, 0.024, -0.026, 0.028, -0.03, 0.032, -0.034, 0.036, -0.038, }; 
+//float[] random_coefficients = {-0.002, 0.004, -0.006, 0.008, -0.01, 0.012, -0.014, 0.016, -0.018, 0.02, -0.022, 0.024, -0.026, 0.028, -0.03, 0.032, -0.034, 0.036, -0.038, }; 
 //float[] random_coefficients = {0.4, -0.4};
-//float[] random_coefficients = {0.4, -0.8};
+//float[] random_coefficients = {0.2, -0.2, 0.25, -0.25};
 
 
-// draws a bunch of lines that connect certain balls.
-// WARNING: draw_weird_lines LOOKS VERY BAD FOR ANY random_coefficient CONFIGURATION EXCEPT random_coefficients = {K} WHERE K IS SOME CONSTANT
-boolean draw_weird_lines = false; // I repeat: only turn on if random_coefficients = {0.5} or some other constant (I mean... you COULD turn it on whenever you like ... if you want your eyes to bleed)
-int line_skip_ball_number = 100; //how many balls to skip before connecting balls with lines (a line will be drawn between the i'th ball and i+line_skip_ball_number'th ball)
 
+
+boolean draw_weird_lines = false; // draws a bunch of lines that connect certain balls
+// WARNING: draw_weird_lines LOOKS VERY BAD FOR CERTAIN random_coefficient CONFIGURATIONS. It also causes a sharp decrease in framerate.
+// I repeat: TURN ON AT YOUR OWN RISK (I mean... you could turn it on whenever you like ... if you want gamble your eyes bleeding. Though sometimes it does look cool, so maybe it's worth the risk)
+
+int line_skip_ball_number = 200; //how many balls should be between the line (a line will be drawn between the i'th ball and i+line_skip_ball_number'th ball)
+
+//////////////////////////////////////////////////////////////
 //don't play with anything from this line onward
 color[] colors; //stores the colors of the balls (we don't actually have to store it because every instance of SpinningCircle keeps track of it's own color, but it's easier to have an array when generating the gradient)
 boolean screen_is_paused = false; //stores whether the screen is paused;
@@ -41,6 +50,7 @@ boolean in_slow_motion = false; // stores whether the animation is in "slow moti
 SpinningCircle[] balls; // stores a list of balls. The custom SpinningCircle class is defined under the "SpinningCircleClass" file
 
 void generate_colors(){
+  println(gradient_increment);
   // generates colors for balls
   if (color_mode.equals("alternating")){
     colors = default_colors;
@@ -58,19 +68,18 @@ void generate_colors(){
   float r = 0;
   float g = 0;
   float b = 0;
-  float plus = 1.25; // what we will increment the gradient by (increase this for a sharper change in the gradient)
   for (int i = 0; i<number_of_balls; i++){
     if (0 <= r && r < 255) { 
-      r+=plus;
+      r+=gradient_increment;
     } else if (0 <= g && g < 255) {
-      g+=plus;
+      g+=gradient_increment;
     } else if (0 <= b && b < 255) {
-      b+=plus;
+      b+=gradient_increment;
     } else {
-      plus *= -1; // we're at the boundary, we gotta reverse the direction
-      r+=plus;
-      g+=plus;
-      b+=plus;
+      gradient_increment *= -1; // we're at the boundary, we gotta reverse the direction
+      r+=gradient_increment;
+      g+=gradient_increment;
+      b+=gradient_increment;
     };
     colors[i] = color(r, g, b);
   }
@@ -124,12 +133,14 @@ void draw(){
     balls[i].display();
   };
   if (draw_weird_lines){
-    for (int i = number_of_balls - 1; i > line_skip_ball_number; i-=2){
+    for (int i = 0; i < balls.length - line_skip_ball_number; i+=1){
       stroke(balls[i].ball_color);
-      line(balls[i].x, balls[i].y, balls[i-line_skip_ball_number].x, balls[i-line_skip_ball_number].y);
+      line(balls[i].x, balls[i].y, balls[(i+line_skip_ball_number)%balls.length].x, balls[(i+line_skip_ball_number)%balls.length].y);
     };
-    stroke_settings();
+    stroke_settings(); // if the user wants no outline on the balls, we have to reset that setting
   };
+  textSize(40);
+  text("fps: " + str(round(frameRate)), 100, 100);
 }
 
 void mouseClicked(){
