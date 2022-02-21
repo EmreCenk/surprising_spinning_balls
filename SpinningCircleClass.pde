@@ -13,7 +13,7 @@ class SpinningCircle{
                  float spin_speed_,
                  color color_of_ball){
     
-    // setting the ball's values to what was defined:               
+    // setting the ball's initial values:               
     x = starting_x;
     y = starting_y;
     r = radius;
