@@ -1,249 +1,182 @@
-
-int screen_size = 600; //how many pixels you want the grid to be in total
-int dimensions = 90; // how many cells you want on each side of grid. This must be divisible by screen_size
-int player_num = 11;  // how many players per team
-int ball_radius = 1; // ball radius in terms of cells
-float wall_elasticity_coefficient = 0.1; // how bouncy the wall is (should be between 0-1)
-float ball_mass = 10; // (kg) more mass means more friction force and ball is more difficult to move
-
-int goalies_for_team1 = 20; // how many goalie's you want on team 1
-int goalies_for_team2 = 1; // how many goalie's on team 2
-float goalie_weakness_coeff = 1; // how much weaker should a goalie's kick be compared to a player? If this is greater than 1, goalies will be able to kick more powerfully than offence players
-
-int[] team_1_vision_interval = {round(dimensions*0.1), round(dimensions*0.98)}; // speeds of team 2 will be in this interval
-int[] team_2_vision_interval = {round(dimensions*0.1), round(dimensions*0.98)}; // speeds of team 2 will be in this interval
-
-float[] team_1_speed_interval = {1, 4}; // speeds of team 1 will be in this interval
-float[] team_2_speed_interval = {1, 4}; // speeds of team 2 will be in this interval
-
-float[] team_1_kick_power_interval = {1, 2}; // kick powers of team 1 will be in this interval
-float[] team_2_kick_power_interval = {1, 2}; // kick_powers of team 2 will be in this interval
+/*
+An animation that spins a bunch of balls at different speeds (increasing unless specified otherwise)
+press p to take a pictures
+press s to toggle slow motion
+click the screen to pause animation
+There are some demo pictures under the output folder. 
+If you don't feel like playing with a bunch of settings to discover the cool animations yourself, you can check out the output folder to see some interesting patterns.
+*/ 
 
 
+// feel free to play around with these values
+int number_of_balls = 1000;
+float spacing_between_balls = 1; // how spread out you want the balls to be 
+int ball_radius = 12;
+float spinning_speed_difference = 0.0001; // how much the spin speed should increase between each ball
+String color_mode = "gradient"; // "gradient" or "alternating". if "gradient": colors of balls will be in a gradient. if "alternating": the colors will be alternating
+float gradient_increment = 1.25*1000/float(number_of_balls); //gradient rate of change between balls (increase this for a sharper change in the gradient, decrease for smoother transition) 
+// [right now I have a formula to find the optimal rate of change to include all colors, so I wouldn't change it if I were you. but if you were to change, the value should be 0 < X < 255]
+String direction = "counterclockwise"; // "clockwise" or "counterclockwise"
+color[] default_colors = {color(255, 0, 0), color(255, 255, 255), // the default color scheme if there is no gradient
+                          //color(0, 0, 255), color(255, 255, 255) // you can add as many colors as you like
+                         }; 
+boolean draw_circle_outline = false; // do you want processing to draw outlines on the circles? Spoiler: it looks way better without outlines [this was mainly used to debug, it should be false if you want the balls to look good]
 
 
-float friction_coefficient = 0.003; // this changes the surface friction. 0.001 would be like ice and 0.003 would be like grass
-/* 
-Today I learned:
-FrictionForce = FNormal * Mu
-              = m * g * Mu
-(in this case FNormal = m * g since the field is flat)
-so why not implement it here?
-*/
+// random coefficients to multiply the balls' spin speeds by certain coefficients:
+// The i'th coefficient is applied to every ball with index i, i+len(random_coefficients), i+2*len(random_coefficients), i+3*len(random_coefficients)...
+// in other words, the i'th coefficient is applied to every ball with index k, where i%random_coefficients.length == k
+float[] random_coefficients = {0.5}; // right now it's multiplying all spin speeds by 0.5, so it's not doing anything. Check out the examples below if you want to see some cooler values
+
+// here are some more interesting random_coefficients values you could try (they get cooler the more you go down!):
+// (if you haven't tried the following values, then you haven't properly experienced this program)
+//float[] random_coefficients = {0.18, 0.19, 0.20, 0.21};
+//float[] random_coefficients = {-0.002, 0.004, -0.006, 0.008, -0.01, 0.012, -0.014, 0.016, -0.018, 0.02, -0.022, 0.024, -0.026, 0.028, -0.03, 0.032, -0.034, 0.036, -0.038, }; 
+//float[] random_coefficients = {0.4, -0.4};
+//float[] random_coefficients = {0.2, -0.2, 0.25, -0.25};
 
 
-int team_1_goals = 0;
-int team_2_goals = 0;
-float friction = ball_mass * 9.81 * friction_coefficient;     
-boolean debug = false;
 
 
-Ball ball;
-Cell[][] cells;
-int[][] player_coordinates; // stores the coordinates of the players so we don't have to loop through every cell when trying to access players.
-int collums_needed, players_per_collum;
+boolean draw_weird_lines = false; // draws a bunch of lines that connect certain balls
+// WARNING: draw_weird_lines does not look very good for certain random_coefficients configurations. Turning this on also causes a sharp decrease in framerate.
+int line_skip_ball_number = 200; //how many balls should be between the line (a line will be drawn between the i'th ball and i+line_skip_ball_number'th ball)
 
-void generate_player_stats(){
-  //if (true) return;
-  float a1, a2, c1, c2; 
-  int side;
-  int e1, e2;
-  String player_type_;
-  for (int[] c: player_coordinates){
-    side = 1;
-    player_type_ = "offence";
-    if (cells[c[0]][c[1]].tag.equals("team1")){
-      a1 = team_1_kick_power_interval[0];
-      a2 = team_1_kick_power_interval[1];
-      c1 = team_1_speed_interval[0];
-      c2 = team_1_speed_interval[1];
-      e1 = team_1_vision_interval[0];
-      e2 = team_1_vision_interval[1];
-      if (goalies_for_team1 > 0){
-        player_type_ = "goalie";
-        goalies_for_team1 -= 1;
-        cells[c[0]][c[1]].cell_color = color(0, 0, 255);
-        
-        //goalie's can't kick as strong as offensive players:
-        a1 = team_1_kick_power_interval[0] * goalie_weakness_coeff;
-        a2 = team_1_kick_power_interval[1] * goalie_weakness_coeff;
-      }
 
-    }
-    else{
-      a1 = team_2_kick_power_interval[0];
-      a2 = team_2_kick_power_interval[1];
-      c1 = team_2_speed_interval[0];
-      c2 = team_2_speed_interval[1];
-      e1 = team_2_vision_interval[0];
-      e2 = team_2_vision_interval[1];
-      side *= -1;
-      if (goalies_for_team2 > 0){
 
-        // TODO: shift goalies to right or left
-        player_type_ = "goalie";
-        goalies_for_team2 -= 1;
-        cells[c[0]][c[1]].cell_color = color(0, 0, 255);
-        
-        //goalie's can't kick as strong as offensive players:
-        a1 = team_2_kick_power_interval[0] * goalie_weakness_coeff;
-        a2 = team_2_kick_power_interval[1] * goalie_weakness_coeff;
-      }
-    }
-    
-    cells[c[0]][c[1]].player_type = player_type_;
-    cells[c[0]][c[1]].kick_power = round(random(a1, a2));
-    cells[c[0]][c[1]].speed = round(random(c1, c2));
-    cells[c[0]][c[1]].vision = round(random(e1, e2));
+//////////////////////////////////////////////////////////////
+//don't play with anything from this line onward
+color[] colors; //stores the colors of the balls (we don't actually have to store it because every instance of SpinningCircle keeps track of it's own color, but it's easier to have an array when generating the gradient)
+boolean screen_is_paused = false; //stores whether the screen is paused;
+boolean in_slow_motion = false; // stores whether the animation is in "slow motion" mode
+SpinningCircle[] balls; // stores a list of balls. The custom SpinningCircle class is defined under the "SpinningCircleClass" file
 
-    cells[c[0]][c[1]].side_to_score_on = side;
-    //println(cells[c[0]][c[1]].kick_power, cells[c[0]][c[1]].speed);
-    
+void generate_colors(){
+
+  // generates colors for balls
+  if (color_mode.equals("alternating")){
+    colors = default_colors;
+    return;
   }
-
-}
-void player_decision(){
-
-  //cells[player_coordinates[0][0]][player_coordinates[0][1]].player_type = "offence";
-  //cells[player_coordinates[0][0]][player_coordinates[0][1]].speed = 1;
-  //cells[player_coordinates[0][0]][player_coordinates[0][1]].kick_power = 3;
-  
-  //cells[player_coordinates[1][0]][player_coordinates[1][1]].player_type = "offence";
-  //cells[player_coordinates[1][0]][player_coordinates[1][1]].speed = 2;
-  //cells[player_coordinates[1][0]][player_coordinates[1][1]].kick_power = 4;
-  //cells[player_coordinates[1][0]][player_coordinates[1][1]].side_to_score_on = -1;
-  PVector new_coordinate;
-  for (int[] c: player_coordinates){
-    new_coordinate = cells[c[0]][c[1]].make_decision(c[0], c[1], ball, cells);
-    c[0] = int(new_coordinate.x);
-    c[1] = int(new_coordinate.y);
+  if (!color_mode.equals("gradient")){
+    // invalid input, but I'll run the program anyways
+    println("WARNING: '" + color_mode + "' is not a valid color mode. color_mode must be 'gradient' or 'alternating'. By default, the 'gradient' mode has been selected.\nPlease make sure the value for the 'color_mode' variable is valid.");
   }
   
+  // generates the gradient of colors
+  colors = new color[number_of_balls];
+  
+  //r,g,b is what color the gradient will start at. (0,0,0) is perfect because the outermost balls barely move anyways, so it's better for them to be less visible
+  float r = 0;
+  float g = 0;
+  float b = 0;
+  for (int i = 0; i<number_of_balls; i++){ // loop throught, increase and decrease rgb values respectively to create a gradient
+    if (0 <= r && r < 255) r+=gradient_increment;
+    else if (0 <= g && g < 255) g+=gradient_increment;
+    else if (0 <= b && b < 255) b+=gradient_increment;
+    else {
+      gradient_increment *= -1; // we're at the boundary, we gotta reverse the direction we're in crementing in
+      r+=gradient_increment;
+      g+=gradient_increment;
+      b+=gradient_increment;
+    };
+    colors[i] = color(r, g, b);
+  }
 }
-void display_grid(){
-  // displays grid
-  // we can't make the player decisions here because a player's decision might update a cell that's already been looped through
-  for (int i = 0; i < dimensions; i++){
-    for (int j = 0; j < dimensions; j++){
-      cells[i][j].display();
-      //if (cells[i][j].tag.equals("ball")){println("ball", i, j);}
-      if (debug){
-        textSize(10);
-        fill(color(100, 100, 100));
-        textAlign(LEFT, TOP);
-        text(str(i) + ", " + str(j), cells[i][j].x, cells[i][j].y);
-      }
-    }
+void generate_balls(){
+  // generates a list of balls
+  
+  generate_colors(); // lets make sure all our colors our defined beforehand. All stored colors are automatically dumped into the colors variable
+  balls = new SpinningCircle[number_of_balls]; 
+  
+  // the coordinates of the first ball:
+  float starting_point_x = (width/2) - (number_of_balls*spacing_between_balls/2);
+  float starting_point_y = height/2;
+  
+  int spin_direction_coefficient; // will be used to control clockwise or counterclockwise
+  if (direction == "counterclockwise") spin_direction_coefficient = -1;
+  else if (direction == "clockwise") spin_direction_coefficient = 1;
+  else{
+    // invalid input, but I'll run the program anyways
+    println("WARNING: '" + direction +"' is not an option for direction. Direction must be 'clockwise' or 'counterclockwise'.\nBy default, the program has picked clockwise.");
+    spin_direction_coefficient = 1;
+  };
+  
+  for (int i = 0; i<number_of_balls; i++){ // generates balls
+    balls[i] = new SpinningCircle(starting_point_x + spacing_between_balls * i, //x coordinate
+                                  starting_point_y, //y coordinate
+                                  ball_radius, // radius
+                                  spin_direction_coefficient * (i + 1) * spinning_speed_difference * random_coefficients[i%random_coefficients.length], // the speed ball will spin at
+                                  colors[i%colors.length]); // color
   }
 
+
 }
 
-
-void settings(){
-  size(screen_size, screen_size + int(screen_size * 0.2));
-
+void stroke_settings(){
+  // adjusts stroke settings
+  if (draw_circle_outline) stroke(255);
+  else noStroke();  
 }
 void setup(){
-  println(screen_size % dimensions);
-  if (screen_size % dimensions !=0){
-  
-    println("ERROR : screen_size must be divisible by dimensions.");
-    exit();
-    return;
-      
-  }
-  frameRate(10);
-  float cell_size = screen_size/dimensions;
-  player_coordinates = new int[player_num * 2][2];
-  cells = new Cell[int(screen_size/cell_size)][int(screen_size/cell_size)];
-  
-  // creating grid:
-  for (int i = 0; i < dimensions; i++){
-    for (int j = 0; j < dimensions; j++){
-      cells[i][j] = new Cell(j * cell_size, i * cell_size, cell_size, color(255, 255, 255), "empty");      
-    }
-  }
-  
-  int right_shift = 4;
-  collums_needed = int(player_num / (dimensions/2.0));
-  
-  
-  //creating team 1:
-  int w = 0;
-  // go through as many collumns as you can, fitting dimensions/2 players to each collum until you run out:
-  for (int i = 0; i < dimensions; i += 2){
-    for (int j = 0; j < collums_needed; j++){
-      cells[i + j%2][j + right_shift].update(color(255, 0, 0), "team1");
-      player_coordinates[w][0] = i + j%2; 
-      player_coordinates[w][1] = j + right_shift;
-      w+=1;
-    }
-  }
-  
-  // add remaining players
-  for (int i = 0; i < player_num % (dimensions/2); i++){
-    cells[i*2 + collums_needed % 2][collums_needed + right_shift].update(color(255, 0, 0), "team1");
-    player_coordinates[w][0] = i*2 + collums_needed % 2; 
-    player_coordinates[w][1] = collums_needed + right_shift;
-    w+=1;
-  }
-  
-  //creating team 2:
-  for (int i = 0; i < dimensions; i += 2){
-    for (int j = cells[0].length - 1; j > cells[0].length - 1 - collums_needed; j--){
-      cells[i + j%2][j - right_shift].update(color(0, 255, 0), "team2");
-      player_coordinates[w][0] = i + j%2; 
-      player_coordinates[w][1] = j - right_shift;
-      w+=1;
-    }
-  }
-  for (int i = 0; i < player_num % (dimensions/2); i++){
-    try {
-      cells[i*2 + (cells[0].length - 1 - collums_needed) % 2][cells[0].length - 1 - right_shift - collums_needed].update(color(0, 255, 0), "team2");
-      player_coordinates[w][0] = i*2 + (cells[0].length - 1 - collums_needed) % 2; 
-      player_coordinates[w][1] = cells[0].length - 1 - right_shift - collums_needed;
-    w+=1;
-    } catch(Exception E){
-      print("Please make sure all of the requirements for the user input are properly satisfied.");
-    } 
-  }
-
-  //creating ball
-  ball = new Ball(cells.length/2, cells[0].length/2, ball_radius, friction, cells);
-  //ball.vx = -1.5;
-  //ball.vy = -1.5;
-  
-  generate_player_stats();
-  display_grid();
-
-}
-
-void keyPressed(){
-  if (key == 'P' || key == 'p') noLoop();
-  else loop();
-}
-void draw(){
-  background(color(255, 255, 255));
-  player_decision();
-  ball.move_ball(cells);
-  ball.update_grid(cells, ball.ball_color, "ball"); // in case one of the player overlapped with the ball
-  display_grid();
-  
-  String display_ = "Team 1  |" + str(team_1_goals) + "|"  + str(team_2_goals) + "|  Team 2 ";
-  textSize(30);
+  frameRate(75);
+  stroke_settings();
   fill(0);
-  textAlign(CENTER, CENTER);
-  text(display_, screen_size/2, 1.1*screen_size);
-  println(team_1_goals, team_2_goals);
+
+  size(1400, 1000);
+  generate_balls(); // getting our balls ready
 }
 
+void draw(){
+  background(0);
+  for (int i = 0; i < number_of_balls; i++){
+    // all we have to do is loop through the balls, update their positions, then display them on the screen.
+    balls[i].update();
+    balls[i].display();
+  };
+  
+  if (draw_weird_lines){
+    // draw a line between ball at index i and ball at index i + line_skip_ball_number 
+    for (int i = 0; i < balls.length - line_skip_ball_number; i+=1){
+      stroke(balls[i].ball_color);
+      line(balls[i].x, balls[i].y, balls[(i+line_skip_ball_number)%balls.length].x, balls[(i+line_skip_ball_number)%balls.length].y);
+    };
+    stroke_settings(); // if the user wants no outline on the balls, we have to reset that setting (since we have stroke(balls[i].ball_color))
+  };
+  
+  // Drawing lines drops the framerate so I used these when trying to improve efficiency:
+  //textSize(40);
+  //text("fps: " + str(round(frameRate)), 100, 100);
+}
 
-/*
-TODO:
-IDEAS:
-team captains coordinating attacks?
-passing?
-player speeds?
-player striking speeds? (collision detection may be needed)
-aggresion?
-*/
+void mouseClicked(){
+  //click on the screen to pause the animation
+  if (screen_is_paused) loop();
+  else noLoop();  
+  screen_is_paused = !screen_is_paused;
+}
+void keyPressed(){
+  // press 's' to toggle slow motion
+  // press 'p' to take a picture
+  if (key == 's' || key == 'S'){
+     if (screen_is_paused) return;
+    //toggling slow motion
+    float coefficient;
+    float slow_motion_coef = spinning_speed_difference * number_of_balls * 100; // by what coefficient we will slow down the balls by (the formula is there just to scale the coefficient according to the number of balls)
+    
+    if (in_slow_motion) coefficient = slow_motion_coef; // if we're in slow motion, that means we just multiplied with 1/slow_motion_coef. To cancel the effect of 1/slow_motion_coef, we will multiply with slow_motion_coef
+    else coefficient = 1/slow_motion_coef; // to open slow motion, we will just divide every ball's spin speed by the coefficient
+    
+    for (int i = 0; i<number_of_balls; i++) balls[i].spin_speed *= coefficient;
+    
+    in_slow_motion = !in_slow_motion;
+    return;
+  }
+  
+  if (key == 'p' || key == 'P'){
+    // press the p key to take a picture
+    saveFrame("output/cool_picture####.png"); // all pictures are saved under the output folder
+    println("Took picture!"); 
+  }
+  
+}
